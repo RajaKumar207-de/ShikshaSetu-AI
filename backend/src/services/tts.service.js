@@ -1,4 +1,7 @@
 import { SarvamAIClient } from "sarvamai";
+import { withTimeout } from "../utils/httpError.js";
+
+const TTS_TIMEOUT_MS = 20_000;
 
 const languageConfig = {
   en: {
@@ -57,13 +60,18 @@ export async function generateSpeech(text, language = "hi") {
 
   const config = languageConfig[language] || languageConfig.hi;
 
-  const response = await client.textToSpeech.convert({
-    text: text.trim(),
-    model: "bulbul:v3",
-    languageCode: config.languageCode,
-    speaker: config.speaker,
-    speechSampleRate: 24000,
-  });
+  // A hung Sarvam request must not hold the connection open forever.
+  const response = await withTimeout(
+    client.textToSpeech.convert({
+      text: text.trim(),
+      model: "bulbul:v3",
+      languageCode: config.languageCode,
+      speaker: config.speaker,
+      speechSampleRate: 24000,
+    }),
+    TTS_TIMEOUT_MS,
+    "Sarvam"
+  );
 
   if (!response?.audios?.[0]) {
     throw new Error("No audio returned from Sarvam");

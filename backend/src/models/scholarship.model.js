@@ -49,6 +49,12 @@ const scholarshipSchema = new mongoose.Schema(
       default: "Check official website",
     },
 
+    // Real date used for reminders. Null when the deadline is unknown.
+    deadlineDate: {
+      type: Date,
+      default: null,
+    },
+
     documents: {
       type: [String],
       default: [],
@@ -68,6 +74,15 @@ const scholarshipSchema = new mongoose.Schema(
     timestamps: true,
   }
 );
+
+// Queries filter active scholarships by state / category / level.
+// (category and educationLevel are arrays, so they get separate indexes:
+// MongoDB cannot build one compound index over two array fields.)
+scholarshipSchema.index({ isActive: 1, state: 1, createdAt: -1 });
+scholarshipSchema.index({ isActive: 1, category: 1 });
+scholarshipSchema.index({ isActive: 1, educationLevel: 1 });
+// Reminder sweep looks up upcoming deadlines.
+scholarshipSchema.index({ deadlineDate: 1 });
 
 const Scholarship = mongoose.model(
   "Scholarship",

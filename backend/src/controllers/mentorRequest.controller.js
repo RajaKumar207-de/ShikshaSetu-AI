@@ -1,6 +1,9 @@
 import bcrypt from "bcryptjs";
 import MentorRequest from "../models/mentorRequest.model.js";
 import User from "../models/user.model.js";
+import { notify } from "../services/notification.service.js";
+import { getPagination, paginationMeta } from "../middleware/validate.js";
+import logger, { errorMeta } from "../utils/logger.js";
 
 // ==========================================
 // 1. STUDENT → SEND MENTOR REQUEST
@@ -14,6 +17,16 @@ export const createMentorRequest = async (req, res) => {
       return res.status(400).json({
         success: false,
         message: "Mentor ID is required",
+      });
+    }
+
+    if (
+      !/^[a-f\d]{24}$/i.test(String(mentorId)) ||
+      !(await User.exists({ _id: mentorId, role: "mentor" }))
+    ) {
+      return res.status(404).json({
+        success: false,
+        message: "Mentor not found",
       });
     }
 
@@ -34,8 +47,19 @@ export const createMentorRequest = async (req, res) => {
       student: req.user._id,
       mentor: mentorId,
       message:
-        message ||
-        "I want to connect with you as my mentor.",
+        String(
+          message ||
+            "I want to connect with you as my mentor."
+        ).slice(0, 500),
+    });
+
+    await notify(mentorId, {
+      type: "mentor_request",
+      title: "New mentor request",
+      message: `${req.user.name} wants to connect with you.`,
+      relatedEntity: "MentorRequest",
+      relatedEntityId: request._id,
+      link: "/mentors",
     });
 
     return res.status(201).json({
@@ -44,12 +68,20 @@ export const createMentorRequest = async (req, res) => {
       request,
     });
   } catch (error) {
-    console.error("Mentor Request Error:", error);
+    // validation errors (400) go to the central error handler
+    if (error.expose) throw error;
+
+    if (error.code === 11000) {
+      return res.status(409).json({
+        success: false,
+        message: "Request already sent to this mentor",
+      });
+    }
+    logger.error("Mentor request failed", errorMeta(error));
 
     return res.status(500).json({
       success: false,
       message: "Server error",
-      error: error.message,
     });
   }
 };
@@ -61,26 +93,36 @@ export const createMentorRequest = async (req, res) => {
 
 export const getMentorRequests = async (req, res) => {
   try {
-    const requests = await MentorRequest.find({
-      mentor: req.user._id,
-    })
-      .populate("student", "name email language")
-      .sort({ createdAt: -1 });
+    const pagination = getPagination(req.query, {
+      defaultLimit: 50,
+      maxLimit: 100,
+    });
+    const filter = { mentor: req.user._id };
+
+    const [requests, total] = await Promise.all([
+      MentorRequest.find(filter)
+        .populate("student", "name email language")
+        .sort({ createdAt: -1 })
+        .skip(pagination.skip)
+        .limit(pagination.limit)
+        .lean(),
+      MentorRequest.countDocuments(filter),
+    ]);
 
     return res.status(200).json({
       success: true,
       requests,
+      pagination: paginationMeta(pagination, total),
     });
   } catch (error) {
-    console.error(
-      "Get Mentor Requests Error:",
-      error
-    );
+    // validation errors (400) go to the central error handler
+    if (error.expose) throw error;
+
+    logger.error("Get Mentor Requests Error", errorMeta(error));
 
     return res.status(500).json({
       success: false,
       message: "Server error",
-      error: error.message,
     });
   }
 };
@@ -124,9 +166,34 @@ export const updateMentorRequest = async (req, res) => {
       });
     }
 
+    if (request.status !== "pending") {
+      return res.status(409).json({
+        success: false,
+        message: `This request was already ${request.status}`,
+      });
+    }
+
     request.status = status;
 
     await request.save();
+
+    await notify(request.student, {
+      type:
+        status === "accepted"
+          ? "mentor_request_accepted"
+          : "mentor_request_rejected",
+      title:
+        status === "accepted"
+          ? "Mentor request accepted"
+          : "Mentor request declined",
+      message:
+        status === "accepted"
+          ? `${req.user.name} accepted your request.`
+          : `${req.user.name} could not accept your request. You can try another mentor.`,
+      relatedEntity: "MentorRequest",
+      relatedEntityId: request._id,
+      link: "/mentors",
+    });
 
     return res.status(200).json({
       success: true,
@@ -134,15 +201,14 @@ export const updateMentorRequest = async (req, res) => {
       request,
     });
   } catch (error) {
-    console.error(
-      "Update Mentor Request Error:",
-      error
-    );
+    // validation errors (400) go to the central error handler
+    if (error.expose) throw error;
+
+    logger.error("Update Mentor Request Error", errorMeta(error));
 
     return res.status(500).json({
       success: false,
       message: "Server error",
-      error: error.message,
     });
   }
 };
@@ -154,44 +220,45 @@ export const updateMentorRequest = async (req, res) => {
 
 export const getMentors = async (req, res) => {
   try {
-    console.log("GET /api/mentors called");
+    const pagination = getPagination(req.query, {
+      defaultLimit: 20,
+      maxLimit: 50,
+    });
 
-    const mentors = await User.find(
-      {
-        role: "mentor",
-      },
-      {
-        name: 1,
-        email: 1,
-        language: 1,
-        role: 1,
-        subject: 1,
-        experience: 1,
-        availability: 1,
-      }
-    )
-      .limit(10)
-      .sort({ createdAt: -1 });
+    // Contact emails are only shown to signed-in users.
+    const projection = {
+      name: 1,
+      language: 1,
+      role: 1,
+      subject: 1,
+      experience: 1,
+      availability: 1,
+      ...(req.user ? { email: 1 } : {}),
+    };
 
-    console.log(
-      "Mentors found:",
-      mentors.length
-    );
+    const [mentors, total] = await Promise.all([
+      User.find({ role: "mentor" }, projection)
+        .sort({ createdAt: -1 })
+        .skip(pagination.skip)
+        .limit(pagination.limit)
+        .lean(),
+      User.countDocuments({ role: "mentor" }),
+    ]);
 
     return res.status(200).json({
       success: true,
       mentors,
+      pagination: paginationMeta(pagination, total),
     });
   } catch (error) {
-    console.error(
-      "GET MENTORS ERROR:",
-      error
-    );
+    // validation errors (400) go to the central error handler
+    if (error.expose) throw error;
+
+    logger.error("Get mentors failed", errorMeta(error));
 
     return res.status(500).json({
       success: false,
       message: "Failed to load mentors",
-      error: error.message,
     });
   }
 };
@@ -207,6 +274,17 @@ export const updateMentorProfile = async (
 ) => {
   try {
     const { mentorId } = req.params;
+
+    // A mentor may only edit their own profile (admins can edit any).
+    if (
+      req.user.role !== "admin" &&
+      req.user._id.toString() !== mentorId
+    ) {
+      return res.status(403).json({
+        success: false,
+        message: "You can only update your own profile",
+      });
+    }
 
     const {
       subject,
@@ -257,15 +335,14 @@ export const updateMentorProfile = async (
       },
     });
   } catch (error) {
-    console.error(
-      "Update Mentor Profile Error:",
-      error
-    );
+    // validation errors (400) go to the central error handler
+    if (error.expose) throw error;
+
+    logger.error("Update Mentor Profile Error", errorMeta(error));
 
     return res.status(500).json({
       success: false,
       message: "Server error",
-      error: error.message,
     });
   }
 };
@@ -415,36 +492,49 @@ export const seedMentors = async (req, res) => {
       mentors: createdMentors,
     });
   } catch (error) {
-    console.error(
-      "Seed Mentors Error:",
-      error
-    );
+    // validation errors (400) go to the central error handler
+    if (error.expose) throw error;
+
+    logger.error("Seed Mentors Error", errorMeta(error));
 
     return res.status(500).json({
       success: false,
       message: "Failed to create demo mentors",
-      error: error.message,
     });
   }
 };
 
 export const getStudentMentorRequests = async (req, res) => {
   try {
-    const requests = await MentorRequest.find({
-      student: req.user._id,
-    })
-      .populate(
-        "mentor",
-        "name email language subject experience availability"
-      )
-      .sort({ createdAt: -1 });
+    const pagination = getPagination(req.query, {
+      defaultLimit: 50,
+      maxLimit: 100,
+    });
+    const filter = { student: req.user._id };
+
+    const [requests, total] = await Promise.all([
+      MentorRequest.find(filter)
+        .populate(
+          "mentor",
+          "name email language subject experience availability"
+        )
+        .sort({ createdAt: -1 })
+        .skip(pagination.skip)
+        .limit(pagination.limit)
+        .lean(),
+      MentorRequest.countDocuments(filter),
+    ]);
 
     return res.status(200).json({
       success: true,
       requests,
+      pagination: paginationMeta(pagination, total),
     });
   } catch (error) {
-    console.error("Get student mentor requests error:", error);
+    // validation errors (400) go to the central error handler
+    if (error.expose) throw error;
+
+    logger.error("Get student mentor requests error", errorMeta(error));
 
     return res.status(500).json({
       success: false,

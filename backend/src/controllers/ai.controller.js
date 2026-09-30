@@ -1,20 +1,39 @@
 import { GoogleGenAI } from "@google/genai";
 import "dotenv/config";
+import logger, { errorMeta } from "../utils/logger.js";
+import { externalServiceFailure, withTimeout } from "../utils/httpError.js";
 
-const ai = new GoogleGenAI({
+export const AI_TIMEOUT_MS = 25_000;
+
+export const ai = new GoogleGenAI({
   apiKey: process.env.GEMINI_API_KEY,
+  // Hard stop for hung requests so they can't hold server resources.
+  httpOptions: { timeout: AI_TIMEOUT_MS },
 });
 
-console.log(
-  "Gemini API Key loaded:",
-  Boolean(process.env.GEMINI_API_KEY)
-);
+// Shared by every Gemini call: timeout + safe error mapping.
+export const generateWithTimeout = (contents) =>
+  withTimeout(
+    ai.models.generateContent({
+      model: "gemini-3.5-flash-lite",
+      contents,
+    }),
+    AI_TIMEOUT_MS + 2000,
+    "Gemini"
+  );
+
+// Logs technical details server-side, returns a friendly message to the user.
+export const sendAiFailure = (res, error, label) => {
+  const { status, message } = externalServiceFailure(error, "The AI tutor");
+  logger.error(label, errorMeta(error));
+  return res.status(status).json({ success: false, message });
+};
 
 // =====================================================
 // LANGUAGE MAP
 // =====================================================
 
-const languageMap = {
+export const languageMap = {
   en: "English",
   english: "English",
 
@@ -44,7 +63,7 @@ const languageMap = {
 // NORMALIZE LANGUAGE
 // =====================================================
 
-const normalizeLanguage = (language) => {
+export const normalizeLanguage = (language) => {
   if (!language) {
     return "English";
   }
@@ -60,7 +79,7 @@ const normalizeLanguage = (language) => {
 // LANGUAGE RULES
 // =====================================================
 
-const languageRules = {
+export const languageRules = {
   English: `
 Write the answer completely in English.
 
@@ -240,7 +259,7 @@ Do NOT leave unnecessary English words in speechText.
 // CLEAN GEMINI JSON
 // =====================================================
 
-const cleanJsonText = (text) => {
+export const cleanJsonText = (text) => {
   if (!text) {
     return "";
   }
@@ -282,10 +301,17 @@ export const askAI = async (req, res) => {
     // VALIDATION
     // =================================================
 
-    if (!question || !question.trim()) {
+    if (typeof question !== "string" || !question.trim()) {
       return res.status(400).json({
         success: false,
         message: "Question is required",
+      });
+    }
+
+    if (question.length > 600) {
+      return res.status(400).json({
+        success: false,
+        message: "Question is too long (max 600 characters)",
       });
     }
 
@@ -295,12 +321,6 @@ export const askAI = async (req, res) => {
 
     const selectedLanguage =
       normalizeLanguage(language);
-
-    console.log("=================================");
-    console.log("Student Question:", question);
-    console.log("Received Language:", language);
-    console.log("Selected Language:", selectedLanguage);
-    console.log("=================================");
 
     // =================================================
     // PROMPT
@@ -431,22 +451,9 @@ speechText = pronunciation-friendly native-script version.
     // GEMINI REQUEST
     // =================================================
 
-    const response =
-      await ai.models.generateContent({
-        model: "gemini-3.5-flash-lite",
-        contents: prompt,
-      });
-
-    console.log(
-      "Gemini response received ✅"
-    );
+    const response = await generateWithTimeout(prompt);
 
     const rawResponse = response.text || "";
-
-    console.log(
-      "Gemini Raw Tutor Response:",
-      rawResponse
-    );
 
     // =================================================
     // PARSE RESPONSE
@@ -461,15 +468,7 @@ speechText = pronunciation-friendly native-script version.
       tutorData =
         JSON.parse(cleanedResponse);
     } catch (parseError) {
-      console.error(
-        "AI Tutor JSON Parse Error:",
-        parseError.message
-      );
-
-      console.error(
-        "Raw Gemini Response:",
-        rawResponse
-      );
+      logger.warn("AI tutor returned non-JSON, using raw text");
 
       // Fallback
       tutorData = {
@@ -506,36 +505,7 @@ speechText = pronunciation-friendly native-script version.
       speechText,
     });
   } catch (error) {
-    console.error(
-      "========== GEMINI ERROR =========="
-    );
-
-    console.error(
-      "Message:",
-      error.message
-    );
-
-    console.error(
-      "Cause:",
-      error.cause
-    );
-
-    console.error(
-      "Full Error:",
-      error
-    );
-
-    console.error(
-      "=================================="
-    );
-
-    return res.status(500).json({
-      success: false,
-      message: "AI response failed",
-      error: error.message,
-      cause:
-        error.cause?.message || null,
-    });
+    return sendAiFailure(res, error, "AI tutor failed");
   }
 };
 
@@ -555,7 +525,14 @@ export const generateCareerRoadmap = async (
 
     // ================= VALIDATION =================
 
-    if (!interest || !goal) {
+    if (
+      typeof interest !== "string" ||
+      typeof goal !== "string" ||
+      !interest.trim() ||
+      !goal.trim() ||
+      interest.length > 120 ||
+      goal.length > 120
+    ) {
       return res.status(400).json({
         success: false,
         message:
@@ -563,25 +540,11 @@ export const generateCareerRoadmap = async (
       });
     }
 
-    console.log(
-      "Career Interest:",
-      interest
-    );
-
-    console.log(
-      "Career Goal:",
-      goal
-    );
-
     // =================================================
     // GEMINI CAREER REQUEST
     // =================================================
 
-    const response =
-      await ai.models.generateContent({
-        model: "gemini-3.5-flash-lite",
-
-        contents: `
+    const response = await generateWithTimeout(`
 You are ShikshaSetu AI Career Guide.
 
 You help rural and tribal students understand
@@ -646,6 +609,18 @@ Use exactly this structure:
     }
   ],
 
+  "journey": {
+    "field": "string (the main field, e.g. Computer Science)",
+    "specializations": ["option 1", "option 2", "option 3"],
+    "path": [
+      {
+        "title": "short stage name, e.g. JavaScript",
+        "description": "one concise sentence",
+        "skills": ["skill", "skill"]
+      }
+    ]
+  },
+
   "projects": [
     "project 1",
     "project 2",
@@ -672,6 +647,8 @@ Use exactly this structure:
 
 IMPORTANT:
 
+- journey.path must have 6 to 7 ordered stages from foundation to first opportunity (for example internship or entry-level practice).
+- journey.specializations must be 3 realistic options within the field.
 - Keep everything beginner-friendly.
 - Give practical advice.
 - Keep descriptions concise.
@@ -679,12 +656,7 @@ IMPORTANT:
 - Make the roadmap relevant to the student's career goal.
 - Do not promise guaranteed jobs.
 - Do not provide guaranteed salary information.
-`,
-      });
-
-    console.log(
-      "Career roadmap generated ✅"
-    );
+`);
 
     // =================================================
     // PARSE JSON
@@ -701,15 +673,7 @@ IMPORTANT:
       careerData =
         JSON.parse(cleanedResponse);
     } catch (parseError) {
-      console.error(
-        "Career JSON Parse Error:",
-        parseError.message
-      );
-
-      console.error(
-        "Gemini Raw Response:",
-        response.text
-      );
+      logger.warn("Career AI returned invalid JSON");
 
       return res.status(500).json({
         success: false,
@@ -729,36 +693,6 @@ IMPORTANT:
       roadmap: careerData,
     });
   } catch (error) {
-    console.error(
-      "========== CAREER AI ERROR =========="
-    );
-
-    console.error(
-      "Message:",
-      error.message
-    );
-
-    console.error(
-      "Cause:",
-      error.cause
-    );
-
-    console.error(
-      "Full Error:",
-      error
-    );
-
-    console.error(
-      "===================================="
-    );
-
-    return res.status(500).json({
-      success: false,
-      message:
-        "Career roadmap generation failed",
-      error: error.message,
-      cause:
-        error.cause?.message || null,
-    });
+    return sendAiFailure(res, error, "Career AI failed");
   }
 };

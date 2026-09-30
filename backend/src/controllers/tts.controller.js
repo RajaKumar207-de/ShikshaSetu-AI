@@ -1,17 +1,30 @@
 import { generateSpeech } from "../services/tts.service.js";
+import { externalServiceFailure } from "../utils/httpError.js";
+import logger, { errorMeta } from "../utils/logger.js";
+
+const SUPPORTED = ["en", "hi", "mr", "bn", "ta", "te", "gu", "pa"];
 
 export const textToSpeech = async (req, res) => {
   try {
-    const { text, language } = req.body;
+    const { text, language } = req.body || {};
 
-    if (!text || !text.trim()) {
+    if (typeof text !== "string" || !text.trim()) {
       return res.status(400).json({
         success: false,
         message: "Text is required",
       });
     }
 
-    const result = await generateSpeech(text, language || "hi");
+    if (text.length > 1500) {
+      return res.status(400).json({
+        success: false,
+        message: "Text is too long for voice (max 1500 characters)",
+      });
+    }
+
+    const lang = SUPPORTED.includes(language) ? language : "hi";
+
+    const result = await generateSpeech(text, lang);
 
     return res.status(200).json({
       success: true,
@@ -20,12 +33,13 @@ export const textToSpeech = async (req, res) => {
       mimeType: "audio/wav",
     });
   } catch (error) {
-    console.error("TTS Error:", error);
+    logger.error("TTS failed", errorMeta(error));
 
-    return res.status(500).json({
-      success: false,
-      message: "Failed to generate speech",
-      error: error.message,
-    });
+    const { status, message } = externalServiceFailure(
+      error,
+      "The voice service"
+    );
+
+    return res.status(status).json({ success: false, message });
   }
 };

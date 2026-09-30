@@ -23,6 +23,8 @@ const userSchema = new mongoose.Schema(
     password: {
       type: String,
       required: true,
+      // never returned by queries unless explicitly requested (login)
+      select: false,
     },
 
     // =========================
@@ -68,6 +70,9 @@ const userSchema = new mongoose.Schema(
     timestamps: true,
   }
 );
+
+// Mentor listing: role filter + newest first.
+userSchema.index({ role: 1, createdAt: -1 });
 
 const User = mongoose.model("User", userSchema);
 
