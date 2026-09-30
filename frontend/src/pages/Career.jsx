@@ -3,10 +3,13 @@ import { useState } from "react";
 import axios from "axios";
 import { API_URL } from "../config";
 import CareerJourney from "../components/CareerJourney";
+import { ToastStack, useToasts } from "../components/Toast";
 
 function Career() {
   const [selectedInterest, setSelectedInterest] = useState("");
   const [selectedGoal, setSelectedGoal] = useState("");
+
+  const { toasts, showToast, dismissToast } = useToasts();
 
   const [roadmap, setRoadmap] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -49,7 +52,13 @@ function Career() {
 
   const handleExplore = async () => {
     if (!selectedInterest || !selectedGoal) {
-      alert("Please select your interest and career goal.");
+      showToast({
+        type: "warning",
+        title: "Almost there",
+        message: !selectedInterest
+          ? "Please select your interest first."
+          : "Please select your career goal.",
+      });
       return;
     }
 
@@ -82,6 +91,11 @@ function Career() {
 
   return (
     <div className="career-page">
+
+      <ToastStack
+        toasts={toasts}
+        onDismiss={dismissToast}
+      />
 
       {/* ================= HERO ================= */}
 

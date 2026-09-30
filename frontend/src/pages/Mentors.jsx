@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import axios from "axios";
 import { API_URL } from "../config";
+import { ToastStack, useToasts } from "../components/Toast";
 
 function Mentors() {
   const [search, setSearch] = useState("");
@@ -17,6 +18,14 @@ function Mentors() {
   const [error, setError] = useState("");
   const [requestError, setRequestError] = useState("");
   const [incomingError, setIncomingError] = useState("");
+
+  const { toasts, showToast, dismissToast } = useToasts();
+
+  const scrollToRequests = () => {
+    document
+      .getElementById("mentor-requests")
+      ?.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
 
   // ==========================================
   // CURRENT USER
@@ -218,9 +227,11 @@ function Mentors() {
         localStorage.getItem("token");
 
       if (!authToken) {
-        alert(
-          "Please login first to connect with a mentor."
-        );
+        showToast({
+          type: "warning",
+          title: "Login required",
+          message: "Please login first to connect with a mentor.",
+        });
         return;
       }
 
@@ -237,10 +248,15 @@ function Mentors() {
         }
       );
 
-      alert(
-        response.data.message ||
-          "Mentor request sent successfully 🤝"
-      );
+      showToast({
+        type: "success",
+        title: "Request sent 🤝",
+        message: `Your request has been sent to ${mentor.name}. You'll be notified once they respond.`,
+        action: {
+          label: "View my requests",
+          onClick: scrollToRequests,
+        },
+      });
 
       fetchMyRequests();
     } catch (error) {
@@ -249,10 +265,23 @@ function Mentors() {
         error
       );
 
-      alert(
-        error.response?.data?.message ||
-          "Unable to send mentor request."
-      );
+      const alreadySent = error.response?.status === 409;
+
+      showToast({
+        type: alreadySent ? "warning" : "error",
+        title: alreadySent
+          ? "Already requested"
+          : "Request failed",
+        message:
+          error.response?.data?.message ||
+          "Unable to send mentor request.",
+        action: alreadySent
+          ? {
+              label: "View my requests",
+              onClick: scrollToRequests,
+            }
+          : undefined,
+      });
     }
   };
 
@@ -269,7 +298,11 @@ function Mentors() {
         localStorage.getItem("token");
 
       if (!authToken) {
-        alert("Please login first.");
+        showToast({
+          type: "warning",
+          title: "Login required",
+          message: "Please login first.",
+        });
         return;
       }
 
@@ -285,10 +318,18 @@ function Mentors() {
         }
       );
 
-      alert(
+      showToast(
         status === "accepted"
-          ? "Mentor request accepted ✅"
-          : "Mentor request rejected ❌"
+          ? {
+              type: "success",
+              title: "Request accepted",
+              message: "The student has been notified.",
+            }
+          : {
+              type: "info",
+              title: "Request rejected",
+              message: "The request has been declined.",
+            }
       );
 
       fetchIncomingRequests();
@@ -298,10 +339,13 @@ function Mentors() {
         error
       );
 
-      alert(
-        error.response?.data?.message ||
-          "Unable to update mentor request."
-      );
+      showToast({
+        type: "error",
+        title: "Update failed",
+        message:
+          error.response?.data?.message ||
+          "Unable to update mentor request.",
+      });
     }
   };
 
@@ -343,6 +387,11 @@ function Mentors() {
 
   return (
     <div className="mentors-page">
+
+      <ToastStack
+        toasts={toasts}
+        onDismiss={dismissToast}
+      />
 
       {/* ==========================================
           HERO
@@ -429,7 +478,10 @@ function Mentors() {
 
       {isMentor && (
 
-        <section className="my-mentor-requests-section">
+        <section
+          id="mentor-requests"
+          className="my-mentor-requests-section"
+        >
 
           <div className="my-requests-header">
 
@@ -595,52 +647,28 @@ function Mentors() {
                   {request.status ===
                     "pending" && (
 
-                    <div
-                      style={{
-                        display: "flex",
-                        gap: "10px",
-                        marginTop: "18px",
-                      }}
-                    >
+                    <div className="request-actions">
 
                       <button
+                        className="request-action-btn accept"
                         onClick={() =>
                           updateRequestStatus(
                             request._id,
                             "accepted"
                           )
                         }
-                        style={{
-                          flex: 1,
-                          padding: "12px",
-                          border: "none",
-                          borderRadius: "10px",
-                          background: "#16a34a",
-                          color: "#fff",
-                          fontWeight: "700",
-                          cursor: "pointer",
-                        }}
                       >
                         ✓ Accept
                       </button>
 
                       <button
+                        className="request-action-btn reject"
                         onClick={() =>
                           updateRequestStatus(
                             request._id,
                             "rejected"
                           )
                         }
-                        style={{
-                          flex: 1,
-                          padding: "12px",
-                          border: "none",
-                          borderRadius: "10px",
-                          background: "#dc2626",
-                          color: "#fff",
-                          fontWeight: "700",
-                          cursor: "pointer",
-                        }}
                       >
                         ✕ Reject
                       </button>
@@ -668,7 +696,10 @@ function Mentors() {
 
       {!isMentor && (
 
-        <section className="my-mentor-requests-section">
+        <section
+          id="mentor-requests"
+          className="my-mentor-requests-section"
+        >
 
           <div className="my-requests-header">
 
@@ -1059,15 +1090,9 @@ function Mentors() {
                   </div>
 
 
-                  <div
-                    style={{
-                      marginTop: "12px",
-                      fontSize: "13px",
-                      opacity: "0.75",
-                      wordBreak: "break-word",
-                    }}
-                  >
-                    📧 {mentor.email}
+                  <div className="mentor-email">
+                    <span aria-hidden="true">📧</span>
+                    <span>{mentor.email}</span>
                   </div>
 
 
