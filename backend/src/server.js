@@ -34,6 +34,8 @@ import scholarshipRoutes from "./routes/scholarship.routes.js";
 import ttsRoutes from "./routes/tts.routes.js";
 import learningRoutes from "./routes/learning.routes.js";
 import notificationRoutes from "./routes/notification.routes.js";
+import adminRoutes from "./routes/admin.routes.js";
+import mentorPanelRoutes from "./routes/mentorPanel.routes.js";
 import { startReminderScheduler } from "./services/reminder.service.js";
 
 validateEnv();
@@ -96,6 +98,8 @@ app.use("/api/mentors", mentorRequestRoutes);
 app.use("/api/scholarships", scholarshipRoutes);
 app.use("/api/learning", learningRoutes);
 app.use("/api/notifications", notificationRoutes);
+app.use("/api/admin", adminRoutes);
+app.use("/api/mentor-panel", mentorPanelRoutes);
 
 app.get("/", (req, res) => {
   res.json({

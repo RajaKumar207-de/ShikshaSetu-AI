@@ -23,6 +23,8 @@ const Progress = lazy(() => import("./pages/Progress"));
 const LearningPath = lazy(() => import("./pages/LearningPath"));
 const VoiceLearning = lazy(() => import("./pages/VoiceLearning"));
 const OfflineHub = lazy(() => import("./pages/OfflineHub"));
+const AdminPanel = lazy(() => import("./pages/AdminPanel"));
+const MentorPanel = lazy(() => import("./pages/MentorPanel"));
 import NotificationCenter from "./components/NotificationCenter";
 import SarthiAssistant from "./components/SarthiAssistant";
 import SyncManager from "./components/SyncManager";
@@ -152,8 +154,17 @@ function Navbar() {
     },
   ];
 
+  // Role dashboard link, shown first in the profile and mobile menus.
+  const panelItem =
+    user?.role === "admin"
+      ? { label: "Admin Panel", path: "/admin", icon: "🛡️" }
+      : user?.role === "mentor"
+        ? { label: "Mentor Panel", path: "/mentor-panel", icon: "🧑‍🏫" }
+        : null;
+
   // Extra learner tools: shown in the profile menu and mobile menu.
   const learnerItems = [
+    ...(panelItem ? [panelItem] : []),
     { label: "Learning Path", path: "/learning-path", icon: "🧭" },
     { label: "Voice Learning", path: "/voice", icon: "🎙️" },
     { label: "Offline Learning", path: "/offline", icon: "📥" },
@@ -931,6 +942,16 @@ function AppContent() {
           <Route
             path="/offline"
             element={<OfflineHub />}
+          />
+
+          <Route
+            path="/admin"
+            element={<AdminPanel />}
+          />
+
+          <Route
+            path="/mentor-panel"
+            element={<MentorPanel />}
           />
 
         </Routes>

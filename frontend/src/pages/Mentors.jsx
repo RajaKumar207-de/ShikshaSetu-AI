@@ -45,6 +45,11 @@ function Mentors() {
 
   const isMentor = currentUser?.role === "mentor";
 
+  // Only students send mentor requests (the API enforces this too).
+  // Logged-out visitors see the student view and are asked to log in.
+  const isStudentView =
+    !currentUser || currentUser.role === "student";
+
   // ==========================================
   // FETCH MENTORS
   // ==========================================
@@ -175,8 +180,9 @@ function Mentors() {
   // ==========================================
 
   useEffect(() => {
-    fetchMyRequests();
-    fetchIncomingRequests();
+    // Each endpoint is role-restricted; calling the other one just 403s.
+    if (isMentor) fetchIncomingRequests();
+    if (isStudentView) fetchMyRequests();
   }, []);
 
   // ==========================================
@@ -231,6 +237,17 @@ function Mentors() {
           type: "warning",
           title: "Login required",
           message: "Please login first to connect with a mentor.",
+        });
+        return;
+      }
+
+      // The API only accepts requests from students; explain instead
+      // of letting admins/mentors hit a 403.
+      if (!isStudentView) {
+        showToast({
+          type: "info",
+          title: "Student accounts only",
+          message: `You are signed in as ${currentUser?.role || "a non-student"}. Log in with a student account to connect with a mentor.`,
         });
         return;
       }
@@ -694,7 +711,7 @@ function Mentors() {
           STUDENT → MY REQUESTS
       ========================================== */}
 
-      {!isMentor && (
+      {isStudentView && (
 
         <section
           id="mentor-requests"
@@ -1096,18 +1113,14 @@ function Mentors() {
                   </div>
 
 
-                  {!isMentor && (
-
-                    <button
-                      className="connect-mentor-btn"
-                      onClick={() =>
-                        connectMentor(mentor)
-                      }
-                    >
-                      💬 Connect with Mentor
-                    </button>
-
-                  )}
+                  <button
+                    className="connect-mentor-btn"
+                    onClick={() =>
+                      connectMentor(mentor)
+                    }
+                  >
+                    💬 Connect with Mentor
+                  </button>
 
                 </div>
 

@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 
 // Lightweight top-right toast stack. Usage:
 //   const { toasts, showToast, dismissToast } = useToasts();
@@ -106,12 +107,15 @@ function ToastItem({ toast, onDismiss }) {
   );
 }
 
+// Portal: keeps the fixed stack in the viewport corner even when a page
+// wrapper has a transform (which would make it the containing block).
 export function ToastStack({ toasts, onDismiss }) {
-  return (
+  return createPortal(
     <div className="ss-toast-stack" aria-live="polite">
       {toasts.map((toast) => (
         <ToastItem key={toast.id} toast={toast} onDismiss={onDismiss} />
       ))}
-    </div>
+    </div>,
+    document.body
   );
 }

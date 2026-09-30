@@ -75,8 +75,10 @@ function Login() {
 
       const user = response.data.user;
 
-      if (user?.role === "mentor") {
-        navigate("/mentors");
+      if (user?.role === "admin") {
+        navigate("/admin");
+      } else if (user?.role === "mentor") {
+        navigate("/mentor-panel");
       } else {
         navigate("/learning");
       }
