@@ -1,8 +1,19 @@
 
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import axios from "axios";
+import api, { isLoggedIn } from "../utils/api";
+import ScholarshipMatchInfo from "../components/ScholarshipMatchInfo";
+import ScholarshipActions from "../components/ScholarshipActions";
+import { publishSarthiContext } from "../utils/sarthiContext";
+import { API_URL } from "../config";
 
 function Scholarships() {
+  const navigate = useNavigate();
+  const [income, setIncome] = useState("");
+  const [trackedIds, setTrackedIds] = useState([]);
+  const [trackBusy, setTrackBusy] = useState("");
+  const [trackMessage, setTrackMessage] = useState("");
   const [scholarships, setScholarships] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -23,19 +34,20 @@ function Scholarships() {
   // FETCH SCHOLARSHIPS
   // ==========================================
 
-  const fetchScholarships = async () => {
+  const fetchScholarships = async (signal) => {
     try {
       setLoading(true);
       setError("");
 
       const response = await axios.get(
-        "http://localhost:5000/api/scholarships/search",
+        `${API_URL}/api/scholarships/search`,
         {
           params: {
             state,
             category,
             educationLevel,
           },
+          signal,
         }
       );
 
@@ -45,6 +57,9 @@ function Scholarships() {
 
       setShowPersonalized(false);
     } catch (error) {
+      // A newer search replaced this one: not an error.
+      if (axios.isCancel(error)) return;
+
       console.error(
         "Failed to fetch scholarships:",
         error
@@ -68,11 +83,12 @@ function Scholarships() {
       setError("");
 
       const response = await axios.post(
-        "http://localhost:5000/api/scholarships/find-for-me",
+        `${API_URL}/api/scholarships/match`,
         {
           state,
           category,
           educationLevel,
+          incomeLakh: income,
         }
       );
 
@@ -100,8 +116,59 @@ function Scholarships() {
   // ==========================================
 
   useEffect(() => {
-    fetchScholarships();
+    const controller = new AbortController();
+    fetchScholarships(controller.signal);
+    return () => controller.abort();
   }, [state, category, educationLevel]);
+
+  // Tell Sarthi what the student selected (self-reported details only).
+  useEffect(() => {
+    publishSarthiContext({
+      profile: { state, category, educationLevel },
+    });
+  }, [state, category, educationLevel]);
+
+  // Which scholarships this student is already tracking.
+  useEffect(() => {
+    if (!isLoggedIn()) return;
+    api
+      .get("/api/scholarships/tracked")
+      .then((res) => setTrackedIds(res.data.ids || []))
+      .catch(() => null);
+  }, []);
+
+  const toggleTrack = async (scholarship) => {
+    if (!isLoggedIn()) {
+      navigate("/login");
+      return;
+    }
+    const id = String(scholarship._id);
+    const isTracked = trackedIds.includes(id);
+    setTrackBusy(id);
+    setTrackMessage("");
+    try {
+      if (isTracked) {
+        await api.delete(`/api/scholarships/${id}/track`);
+        setTrackedIds((prev) => prev.filter((x) => x !== id));
+      } else {
+        const res = await api.post(`/api/scholarships/${id}/track`);
+        setTrackedIds((prev) => [...prev, id]);
+        setTrackMessage(
+          res.data.hasDeadlineDate
+            ? "Tracking started. Reminders appear under the 🔔 bell. Turn on browser reminders there if you want them on this device."
+            : res.data.message
+        );
+      }
+    } catch {
+      setTrackMessage(
+        navigator.onLine
+          ? "Couldn't update tracking. Please try again."
+          : "You're offline. Tracking needs an internet connection."
+      );
+    } finally {
+      setTrackBusy("");
+    }
+  };
 
   return (
     <div className="scholarships-page">
@@ -402,6 +469,26 @@ function Scholarships() {
         </div>
 
 
+        <div style={{ maxWidth: 360, margin: "0 auto 16px" }}>
+          <label
+            htmlFor="ss-income"
+            style={{ display: "block", fontWeight: 700, marginBottom: 6 }}
+          >
+            Family income per year (in lakh ₹, optional)
+          </label>
+          <input
+            id="ss-income"
+            className="ss-input"
+            style={{ width: "100%" }}
+            type="number"
+            min="0"
+            step="0.1"
+            value={income}
+            onChange={(e) => setIncome(e.target.value)}
+            placeholder="e.g. 3"
+          />
+        </div>
+
         <button
           className="find-scholarship-btn"
           onClick={findScholarshipsForMe}
@@ -439,6 +526,14 @@ function Scholarships() {
               ? "s"
               : ""}{" "}
             matching your selected details.
+          </p>
+
+          <p className="ss-note">
+            Match % shows how many of each scholarship's listed criteria
+            (state, category, education level and income limit, when you
+            enter income) fit the details you selected. It is a guide, not
+            an official eligibility decision. Always confirm on the official
+            website.
           </p>
 
         </div>
@@ -546,6 +641,12 @@ function Scholarships() {
           )}
 
 
+        {trackMessage && (
+          <div className="ss-alert success" role="status" style={{ margin: "0 0 16px" }}>
+            {trackMessage}
+          </div>
+        )}
+
         {/* SCHOLARSHIP CARDS */}
 
         {!loading &&
@@ -592,6 +693,12 @@ function Scholarships() {
 
 
                     {/* DESCRIPTION */}
+
+                    {showPersonalized && (
+                      <ScholarshipMatchInfo
+                        scholarship={scholarship}
+                      />
+                    )}
 
                     <p className="scholarship-description">
                       {scholarship.description}
@@ -716,6 +823,15 @@ function Scholarships() {
                     >
                       🔗 Check Official Website
                     </a>
+
+                    <ScholarshipActions
+                      scholarship={scholarship}
+                      tracked={trackedIds.includes(
+                        String(scholarship._id)
+                      )}
+                      busy={trackBusy === String(scholarship._id)}
+                      onToggleTrack={toggleTrack}
+                    />
 
                   </div>
 

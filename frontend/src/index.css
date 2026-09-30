@@ -9352,3 +9352,55 @@ a {
     display: none !important;
   }
 }
+
+/* =========================================================
+   THEMED SCROLLBAR
+   Green (home / default) · Indigo (learning, lesson, career)
+========================================================= */
+
+:root {
+  --sb-track: #eef3ef;
+  --sb-thumb-from: #16a34a;
+  --sb-thumb-to: #15803d;
+  --sb-thumb-hover-from: #22c55e;
+  --sb-thumb-hover-to: #16a34a;
+}
+
+html:has(.learning-page, .lesson-page, .career-page) {
+  --sb-track: #eef0fb;
+  --sb-thumb-from: #6366f1;
+  --sb-thumb-to: #4f46e5;
+  --sb-thumb-hover-from: #818cf8;
+  --sb-thumb-hover-to: #6366f1;
+}
+
+::-webkit-scrollbar {
+  width: 12px;
+  height: 12px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--sb-track);
+}
+
+::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, var(--sb-thumb-from), var(--sb-thumb-to));
+  border-radius: 999px;
+  border: 3px solid var(--sb-track);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, var(--sb-thumb-hover-from), var(--sb-thumb-hover-to));
+}
+
+::-webkit-scrollbar-corner {
+  background: var(--sb-track);
+}
+
+/* Firefox */
+@supports not selector(::-webkit-scrollbar) {
+  html {
+    scrollbar-width: thin;
+    scrollbar-color: var(--sb-thumb-to) var(--sb-track);
+  }
+}

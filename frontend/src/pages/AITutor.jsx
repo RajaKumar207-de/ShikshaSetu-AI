@@ -1,7 +1,11 @@
 import React, { useEffect, useRef, useState } from "react";
 import axios from "axios";
+import { API_URL } from "../config";
+import ExplainActions from "../components/ExplainActions";
+import { playSpeech } from "../utils/voice";
+import { saveExplanation } from "../utils/explanations";
 
-const API_BASE_URL = "http://localhost:5000";
+const API_BASE_URL = API_URL;
 
 const languages = [
   {
@@ -73,37 +77,17 @@ const recognitionLanguageMap = {
   pa: "pa-IN",
 };
 
-function base64ToBlob(base64, mimeType = "audio/wav") {
-  const byteCharacters = atob(base64);
-  const byteArrays = [];
-
-  const sliceSize = 1024;
-
-  for (let offset = 0; offset < byteCharacters.length; offset += sliceSize) {
-    const slice = byteCharacters.slice(offset, offset + sliceSize);
-
-    const byteNumbers = new Array(slice.length);
-
-    for (let i = 0; i < slice.length; i++) {
-      byteNumbers[i] = slice.charCodeAt(i);
-    }
-
-    const byteArray = new Uint8Array(byteNumbers);
-    byteArrays.push(byteArray);
-  }
-
-  return new Blob(byteArrays, { type: mimeType });
-}
-
 export default function AITutor() {
   const [selectedLanguage, setSelectedLanguage] = useState("hi");
 
   const [question, setQuestion] = useState("");
   const [answer, setAnswer] = useState("");
   const [speechText, setSpeechText] = useState("");
+  const [askedQuestion, setAskedQuestion] = useState("");
 
   const [loading, setLoading] = useState(false);
   const [speaking, setSpeaking] = useState(false);
+  const [preparing, setPreparing] = useState(false);
   const [listening, setListening] = useState(false);
 
   const [error, setError] = useState("");
@@ -122,8 +106,7 @@ export default function AITutor() {
 
   const cleanupAudio = () => {
     if (audioRef.current) {
-      audioRef.current.pause();
-      audioRef.current.currentTime = 0;
+      audioRef.current.stop();
       audioRef.current = null;
     }
 
@@ -133,6 +116,7 @@ export default function AITutor() {
     }
 
     setSpeaking(false);
+    setPreparing(false);
   };
 
   useEffect(() => {
@@ -180,6 +164,14 @@ export default function AITutor() {
 
       setAnswer(answerText);
       setSpeechText(speechTextFromAPI);
+      setAskedQuestion(question.trim());
+
+      // Keep a copy so it can be re-read offline.
+      saveExplanation({
+        question: question.trim(),
+        answer: answerText,
+        language: selectedLanguage,
+      });
     } catch (err) {
       console.error("AI Error:", err);
 
@@ -208,67 +200,30 @@ export default function AITutor() {
       return;
     }
 
-    try {
-      setError("");
-
-      if (speaking) {
-        cleanupAudio();
-        return;
-      }
-
+    // Second click while preparing/speaking = stop.
+    if (speaking || preparing) {
       cleanupAudio();
+      return;
+    }
+
+    setError("");
+    setPreparing(true);
+
+    try {
+      const player = await playSpeech(textToSpeak, selectedLanguage);
+      audioRef.current = player;
+      setPreparing(false);
       setSpeaking(true);
-
-      const response = await axios.post(
-        `${API_BASE_URL}/api/ai/speech`,
-        {
-          text: textToSpeak,
-          language: selectedLanguage,
-        }
-      );
-
-      if (!response.data?.success || !response.data?.audio) {
-        throw new Error(
-          response.data?.message || "No audio received from server."
-        );
-      }
-
-      const audioBlob = base64ToBlob(
-        response.data.audio,
-        response.data.mimeType || "audio/wav"
-      );
-
-      const audioUrl = URL.createObjectURL(audioBlob);
-
-      audioUrlRef.current = audioUrl;
-
-      const audio = new Audio(audioUrl);
-      audioRef.current = audio;
-
-      audio.onplay = () => {
-        setSpeaking(true);
-      };
-
-      audio.onended = () => {
-        cleanupAudio();
-      };
-
-      audio.onerror = () => {
-        cleanupAudio();
-        setError("Audio could not be played.");
-      };
-
-      await audio.play();
+      await player.finished;
     } catch (err) {
       console.error("TTS Error:", err);
-
-      cleanupAudio();
-
       setError(
         err.response?.data?.message ||
           err.message ||
           "Unable to generate speech."
       );
+    } finally {
+      cleanupAudio();
     }
   };
 
@@ -680,12 +635,14 @@ export default function AITutor() {
                     "0 8px 20px rgba(79, 70, 229, 0.25)",
                 }}
                 title={
-                  speaking
+                  preparing
+                    ? "Preparing voice... (click to cancel)"
+                    : speaking
                     ? "Stop speaking"
                     : "Listen to answer"
                 }
               >
-                {speaking ? "⏹️" : "🔊"}
+                {preparing ? "⏳" : speaking ? "⏹️" : "🔊"}
               </button>
             </div>
 
@@ -699,6 +656,20 @@ export default function AITutor() {
             >
               {answer}
             </div>
+
+            <ExplainActions
+              question={askedQuestion}
+              answer={answer}
+              language={selectedLanguage}
+              speaking={speaking}
+              preparing={preparing}
+              onSpeak={speakAnswer}
+              onResult={(result) => {
+                cleanupAudio();
+                setAnswer(result.answer);
+                setSpeechText(result.speechText || result.answer);
+              }}
+            />
           </div>
         )}
       </div>

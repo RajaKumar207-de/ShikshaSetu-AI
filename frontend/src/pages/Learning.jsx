@@ -1,5 +1,8 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
+import { isLoggedIn } from "../utils/api";
+import { SYNC_EVENT, loadSummary } from "../utils/learningSync";
+import { publishSarthiContext } from "../utils/sarthiContext";
 
 import {
   getAllOfflineLessons,
@@ -21,14 +24,14 @@ function Learning() {
   // SUBJECT DATA
   // =====================================================
 
-  const subjects = [
+  const baseSubjects = [
     {
       name: "Mathematics",
       icon: "📐",
       color: "green",
       description:
         "Learn numbers, algebra, geometry and more.",
-      progress: 72,
+      progress: 0,
       topics: [
         "Number System",
         "Algebra",
@@ -44,7 +47,7 @@ function Learning() {
       color: "blue",
       description:
         "Explore physics, chemistry, biology and nature.",
-      progress: 48,
+      progress: 0,
       topics: [
         "Physics",
         "Chemistry",
@@ -60,7 +63,7 @@ function Learning() {
       color: "purple",
       description:
         "Learn computers, programming and technology.",
-      progress: 64,
+      progress: 0,
       topics: [
         "Computer Basics",
         "Programming Basics",
@@ -76,7 +79,7 @@ function Learning() {
       color: "orange",
       description:
         "Improve grammar, vocabulary and communication.",
-      progress: 55,
+      progress: 0,
       topics: [
         "Grammar",
         "Vocabulary",
@@ -86,6 +89,42 @@ function Learning() {
       ],
     },
   ];
+
+  // Real progress: share of a subject's topics whose lesson is completed.
+  const [summary, setSummary] = useState(null);
+
+  useEffect(() => {
+    if (!isLoggedIn()) return undefined;
+    const load = () =>
+      loadSummary("Mathematics")
+        .then(({ data }) => setSummary(data))
+        .catch(() => setSummary(null));
+    load();
+    const onSync = (e) => e.detail?.status === "done" && load();
+    window.addEventListener(SYNC_EVENT, onSync);
+    return () => window.removeEventListener(SYNC_EVENT, onSync);
+  }, []);
+
+  const subjects = baseSubjects.map((subject) => {
+    const stats = summary?.subjects?.find((x) => x.name === subject.name);
+    return {
+      ...subject,
+      progress: stats
+        ? Math.round((stats.lessonsCompleted / stats.totalTopics) * 100)
+        : 0,
+    };
+  });
+
+  const overallProgress = Math.round(
+    subjects.reduce((sum, item) => sum + item.progress, 0) / subjects.length
+  );
+
+  useEffect(() => {
+    publishSarthiContext({
+      subject: selectedSubject || undefined,
+      topic: undefined,
+    });
+  }, [selectedSubject]);
 
   // =====================================================
   // LOAD DOWNLOADED LESSONS FROM INDEXED DB
@@ -184,6 +223,7 @@ function Learning() {
         subject: subject.name,
         topic: subject.topics[0],
         startTest: true,
+        scope: "subject",
       },
     });
   };
@@ -236,6 +276,20 @@ function Learning() {
             with simple and accessible lessons.
           </p>
 
+          {isLoggedIn() && (
+            <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginTop: 18 }}>
+              <Link to="/learning-path" className="ss-btn">
+                🧭 Your Learning Path
+              </Link>
+              <Link to="/voice" className="ss-btn ghost">
+                🎙️ Voice Learning
+              </Link>
+              <Link to="/offline" className="ss-btn ghost">
+                📥 Offline packs
+              </Link>
+            </div>
+          )}
+
         </div>
 
         {/* Progress Card */}
@@ -259,13 +313,13 @@ function Learning() {
             <div className="hero-progress">
               <div
                 style={{
-                  width: "58%",
+                  width: `${overallProgress}%`,
                 }}
               ></div>
             </div>
 
             <span>
-              58% overall progress
+              {overallProgress}% overall progress
             </span>
 
           </div>
@@ -559,7 +613,7 @@ function Learning() {
           <div>🎯</div>
 
           <section>
-            <strong>58%</strong>
+            <strong>{overallProgress}%</strong>
             <span>Progress</span>
           </section>
 

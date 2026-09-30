@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import axios from "axios";
+import { API_URL } from "../config";
 
 function Mentors() {
   const [search, setSearch] = useState("");
@@ -45,8 +46,13 @@ function Mentors() {
         setLoading(true);
         setError("");
 
+        const savedToken = localStorage.getItem("token");
+
         const response = await axios.get(
-          "http://localhost:5000/api/mentors"
+          `${API_URL}/api/mentors`,
+          savedToken
+            ? { headers: { Authorization: `Bearer ${savedToken}` } }
+            : undefined
         );
 
         setMentors(response.data.mentors || []);
@@ -85,7 +91,7 @@ function Mentors() {
       setRequestError("");
 
       const response = await axios.get(
-        "http://localhost:5000/api/mentors/my-requests",
+        `${API_URL}/api/mentors/my-requests`,
         {
           headers: {
             Authorization: `Bearer ${authToken}`,
@@ -129,7 +135,7 @@ function Mentors() {
       setIncomingError("");
 
       const response = await axios.get(
-        "http://localhost:5000/api/mentors/requests",
+        `${API_URL}/api/mentors/requests`,
         {
           headers: {
             Authorization: `Bearer ${authToken}`,
@@ -219,7 +225,7 @@ function Mentors() {
       }
 
       const response = await axios.post(
-        "http://localhost:5000/api/mentors/request",
+        `${API_URL}/api/mentors/request`,
         {
           mentorId: mentor._id,
           message: `I want to connect with ${mentor.name} as my mentor.`,
@@ -268,7 +274,7 @@ function Mentors() {
       }
 
       await axios.patch(
-        `http://localhost:5000/api/mentors/request/${requestId}`,
+        `${API_URL}/api/mentors/request/${requestId}`,
         {
           status,
         },

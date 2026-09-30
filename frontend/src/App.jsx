@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { Suspense, lazy, useEffect, useState } from "react";
 import {
   BrowserRouter,
   Routes,
@@ -9,15 +9,24 @@ import {
 } from "react-router-dom";
 
 import Home from "./pages/Home";
-import Login from "./pages/Login";
-import Register from "./pages/Register";
-import AITutor from "./pages/AITutor";
-import Learning from "./pages/Learning";
-import Lesson from "./pages/Lesson";
-import Mentors from "./pages/Mentors";
-import Scholarships from "./pages/Scholarships";
-import Career from "./pages/Career";
-import Progress from "./pages/Progress";
+const Login = lazy(() => import("./pages/Login"));
+const Register = lazy(() => import("./pages/Register"));
+const AITutor = lazy(() => import("./pages/AITutor"));
+const Learning = lazy(() => import("./pages/Learning"));
+const Lesson = lazy(() => import("./pages/Lesson"));
+const Mentors = lazy(() => import("./pages/Mentors"));
+const Scholarships = lazy(() => import("./pages/Scholarships"));
+const Career = lazy(() => import("./pages/Career"));
+const Progress = lazy(() => import("./pages/Progress"));
+// Pages load on demand (route-level code splitting) to keep the first
+// load small on slow connections. Home stays eager: it is the landing page.
+const LearningPath = lazy(() => import("./pages/LearningPath"));
+const VoiceLearning = lazy(() => import("./pages/VoiceLearning"));
+const OfflineHub = lazy(() => import("./pages/OfflineHub"));
+import NotificationCenter from "./components/NotificationCenter";
+import SarthiAssistant from "./components/SarthiAssistant";
+import SyncManager from "./components/SyncManager";
+import { disablePush } from "./utils/push";
 
 // ======================================================
 // NAVBAR
@@ -73,7 +82,13 @@ function Navbar() {
     return location.pathname.startsWith(path);
   };
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    // Stop push on this device while the token is still valid.
+    await Promise.race([
+      disablePush(),
+      new Promise((resolve) => setTimeout(resolve, 1500)),
+    ]);
+
     localStorage.removeItem("token");
     localStorage.removeItem("user");
 
@@ -135,6 +150,13 @@ function Navbar() {
       path: "/progress",
       icon: "📊",
     },
+  ];
+
+  // Extra learner tools: shown in the profile menu and mobile menu.
+  const learnerItems = [
+    { label: "Learning Path", path: "/learning-path", icon: "🧭" },
+    { label: "Voice Learning", path: "/voice", icon: "🎙️" },
+    { label: "Offline Learning", path: "/offline", icon: "📥" },
   ];
 
   return (
@@ -538,7 +560,10 @@ function Navbar() {
             onClick={closeMenus}
           >
             <img
-              src="/ShikshaSetu-pwa-512.png"
+              src="/logo-96.png"
+              width="44"
+              height="44"
+              decoding="async"
               alt="ShikshaSetu AI"
               className="ss-logo-image"
             />
@@ -597,6 +622,8 @@ function Navbar() {
                 </Link>
               </>
             ) : (
+              <>
+              <NotificationCenter />
               <div className="ss-profile-wrap">
 
                 <button
@@ -645,6 +672,17 @@ function Navbar() {
                       📊 My Progress
                     </Link>
 
+                    {learnerItems.map((item) => (
+                      <Link
+                        key={item.path}
+                        to={item.path}
+                        className="ss-dropdown-link"
+                        onClick={closeMenus}
+                      >
+                        {item.icon} {item.label}
+                      </Link>
+                    ))}
+
                     <Link
                       to="/learning"
                       className="ss-dropdown-link"
@@ -670,6 +708,7 @@ function Navbar() {
                   </div>
                 )}
               </div>
+              </>
             )}
           </div>
 
@@ -715,6 +754,25 @@ function Navbar() {
                   <span>›</span>
                 </Link>
               ))}
+
+              {isLoggedIn &&
+                learnerItems.map((item) => (
+                  <Link
+                    key={item.path}
+                    to={item.path}
+                    onClick={closeMenus}
+                    className={`ss-mobile-link ${
+                      isActive(item.path) ? "active" : ""
+                    }`}
+                  >
+                    <span className="ss-mobile-link-left">
+                      <span>{item.icon}</span>
+                      <span>{item.label}</span>
+                    </span>
+
+                    <span>›</span>
+                  </Link>
+                ))}
 
             </div>
 
@@ -797,8 +855,17 @@ function AppContent() {
       )}
 
       <Navbar />
+      <SyncManager />
+      <SarthiAssistant />
 
       <main>
+        <Suspense
+          fallback={
+            <div className="ss-page">
+              <div className="ss-skeleton" style={{ height: 240 }} />
+            </div>
+          }
+        >
         <Routes>
 
           <Route
@@ -851,7 +918,23 @@ function AppContent() {
             element={<Career />}
           />
 
+          <Route
+            path="/learning-path"
+            element={<LearningPath />}
+          />
+
+          <Route
+            path="/voice"
+            element={<VoiceLearning />}
+          />
+
+          <Route
+            path="/offline"
+            element={<OfflineHub />}
+          />
+
         </Routes>
+        </Suspense>
       </main>
     </>
   );

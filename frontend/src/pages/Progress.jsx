@@ -1,6 +1,10 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import axios from "axios";
+import { API_URL } from "../config";
+import { isLoggedIn } from "../utils/api";
+import { SYNC_EVENT, loadSummary } from "../utils/learningSync";
+import StreakMission from "../components/StreakMission";
 
 function Dashboard() {
   const [user, setUser] = useState(null);
@@ -8,48 +12,53 @@ function Dashboard() {
   const [loading, setLoading] = useState(true);
 
   // ==========================================
-  // STATIC LEARNING PROGRESS
-  // Same data as Progress page
+  // REAL LEARNING PROGRESS (from /api/learning/summary)
+  // Lessons completed per subject + quiz activity.
   // ==========================================
 
-  const overallProgress = 70;
+  const [summary, setSummary] = useState(null);
 
-  const learningStats = {
-    lessonsCompleted: 66,
-    streak: "7 Days",
-    learningTime: "18h",
+  useEffect(() => {
+    if (!isLoggedIn()) return undefined;
+    const load = () =>
+      loadSummary("Mathematics")
+        .then(({ data }) => setSummary(data))
+        .catch(() => setSummary(null));
+    load();
+    const onSync = (e) => e.detail?.status === "done" && load();
+    window.addEventListener(SYNC_EVENT, onSync);
+    return () => window.removeEventListener(SYNC_EVENT, onSync);
+  }, []);
+
+  const ICONS = {
+    Mathematics: "📐",
+    Science: "🔬",
+    Computer: "💻",
+    English: "📖",
   };
 
-  const subjects = [
-    {
-      name: "Mathematics",
-      icon: "📐",
-      progress: 72,
-      completed: 18,
-      total: 25,
-    },
-    {
-      name: "Science",
-      icon: "🔬",
-      progress: 58,
-      completed: 14,
-      total: 24,
-    },
-    {
-      name: "Computer",
-      icon: "💻",
-      progress: 84,
-      completed: 21,
-      total: 25,
-    },
-    {
-      name: "English",
-      icon: "📖",
-      progress: 65,
-      completed: 13,
-      total: 20,
-    },
-  ];
+  const subjects = (summary?.subjects || []).map((item) => ({
+    name: item.name,
+    icon: ICONS[item.name] || "📘",
+    progress: Math.round(
+      (item.lessonsCompleted / item.totalTopics) * 100
+    ),
+    completed: item.lessonsCompleted,
+    total: item.totalTopics,
+  }));
+
+  const overallProgress = subjects.length
+    ? Math.round(
+        subjects.reduce((sum, item) => sum + item.progress, 0) /
+          subjects.length
+      )
+    : 0;
+
+  const learningStats = {
+    lessonsCompleted: summary?.totals?.lessons ?? 0,
+    streak: `${summary?.streak?.streak ?? 0} Days`,
+    quizzesTaken: summary?.totals?.quizzes ?? 0,
+  };
 
   // ==========================================
   // LOAD USER + MENTOR DATA
@@ -79,7 +88,7 @@ function Dashboard() {
 
       if (token) {
         const mentorResponse = await axios.get(
-          "http://localhost:5000/api/mentors/my-requests",
+          `${API_URL}/api/mentors/my-requests`,
           {
             headers: {
               Authorization: `Bearer ${token}`,
@@ -424,7 +433,7 @@ function Dashboard() {
                 margin: "0 0 5px",
               }}
             >
-              Learning Time
+              Quizzes Taken
             </h3>
 
             <strong
@@ -433,7 +442,7 @@ function Dashboard() {
                 color: "#3157d5",
               }}
             >
-              {learningStats.learningTime}
+              {learningStats.quizzesTaken}
             </strong>
 
             <p
@@ -442,7 +451,7 @@ function Dashboard() {
                 color: "#667085",
               }}
             >
-              Total learning time
+              Quizzes and practice completed
             </p>
           </div>
 
@@ -642,6 +651,20 @@ function Dashboard() {
 
         </div>
 
+
+        {summary && (
+          <div style={{ marginBottom: "25px" }}>
+            <StreakMission summary={summary} />
+            <div style={{ marginTop: "14px", textAlign: "right" }}>
+              <Link
+                to="/learning-path"
+                style={{ color: "#3157d5", fontWeight: "600" }}
+              >
+                See your personalized learning path →
+              </Link>
+            </div>
+          </div>
+        )}
 
         {/* ======================================
             CONTINUE LEARNING

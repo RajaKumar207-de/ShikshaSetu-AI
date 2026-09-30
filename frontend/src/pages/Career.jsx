@@ -1,6 +1,8 @@
 
 import { useState } from "react";
 import axios from "axios";
+import { API_URL } from "../config";
+import CareerJourney from "../components/CareerJourney";
 
 function Career() {
   const [selectedInterest, setSelectedInterest] = useState("");
@@ -57,7 +59,7 @@ function Career() {
       setRoadmap(null);
 
       const response = await axios.post(
-        "http://localhost:5000/api/ai/career",
+        `${API_URL}/api/ai/career`,
         {
           interest: selectedInterest,
           goal: selectedGoal,
@@ -758,6 +760,10 @@ function Career() {
 
           </div>
 
+        )}
+
+        {roadmap && !loading && (
+          <CareerJourney roadmap={roadmap} />
         )}
 
       </section>

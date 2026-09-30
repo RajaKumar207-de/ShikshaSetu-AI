@@ -1,13 +1,17 @@
 const DB_NAME = "ShikshaSetuOfflineDB";
-const DB_VERSION = 1;
+const DB_VERSION = 2;
 
 const LESSON_STORE = "lessons";
+
+// Added in DB version 2 (existing lessons are preserved on upgrade).
+export const EVENT_STORE = "pendingEvents";
+export const CACHE_STORE = "cache";
 
 // ======================================================
 // OPEN DATABASE
 // ======================================================
 
-function openDB() {
+export function openDB() {
   return new Promise((resolve, reject) => {
     const request = indexedDB.open(
       DB_NAME,
@@ -20,6 +24,18 @@ function openDB() {
       if (!db.objectStoreNames.contains(LESSON_STORE)) {
         db.createObjectStore(LESSON_STORE, {
           keyPath: "id",
+        });
+      }
+
+      if (!db.objectStoreNames.contains(EVENT_STORE)) {
+        db.createObjectStore(EVENT_STORE, {
+          keyPath: "clientId",
+        });
+      }
+
+      if (!db.objectStoreNames.contains(CACHE_STORE)) {
+        db.createObjectStore(CACHE_STORE, {
+          keyPath: "key",
         });
       }
     };

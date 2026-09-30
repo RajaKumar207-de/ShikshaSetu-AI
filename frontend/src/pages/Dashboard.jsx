@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import axios from "axios";
+import { API_URL } from "../config";
 
 function Dashboard() {
   const [user, setUser] = useState(null);
@@ -81,7 +82,7 @@ function Dashboard() {
 
       if (token) {
         const mentorResponse = await axios.get(
-          "http://localhost:5000/api/mentors/my-requests",
+          `${API_URL}/api/mentors/my-requests`,
           {
             headers: {
               Authorization: `Bearer ${token}`,
