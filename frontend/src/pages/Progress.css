@@ -1,0 +1,1033 @@
+/* =========================================================
+   PROGRESS PAGE
+========================================================= */
+
+.progress-page {
+  min-height: 100vh;
+  width: 100%;
+  background: #f6f8fc;
+  color: #172033;
+  overflow-x: hidden;
+}
+
+
+/* =========================================================
+   HERO
+========================================================= */
+
+.progress-page .progress-hero {
+  position: relative;
+  overflow: hidden;
+  padding: 80px 24px 90px;
+  background:
+    radial-gradient(
+      circle at 85% 20%,
+      rgba(79, 70, 229, 0.22),
+      transparent 30%
+    ),
+    radial-gradient(
+      circle at 10% 80%,
+      rgba(37, 99, 235, 0.16),
+      transparent 30%
+    ),
+    linear-gradient(
+      135deg,
+      #10152b,
+      #18224a 55%,
+      #111a35
+    );
+  color: white;
+}
+
+.progress-page .progress-hero::before {
+  content: "";
+  position: absolute;
+  width: 300px;
+  height: 300px;
+  right: -80px;
+  top: -100px;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.progress-page .progress-hero::after {
+  content: "";
+  position: absolute;
+  width: 180px;
+  height: 180px;
+  left: -70px;
+  bottom: -80px;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.progress-page .progress-hero-content {
+  position: relative;
+  z-index: 2;
+  width: min(1100px, 100%);
+  margin: 0 auto;
+}
+
+.progress-page .progress-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 8px 14px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.09);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.8px;
+}
+
+.progress-page .progress-hero h1 {
+  max-width: 760px;
+  margin: 22px 0 18px;
+  font-size: clamp(38px, 5vw, 64px);
+  line-height: 1.05;
+  letter-spacing: -2px;
+}
+
+.progress-page .progress-hero h1 span {
+  color: #8b9cff;
+}
+
+.progress-page .progress-hero p {
+  max-width: 680px;
+  margin: 0;
+  color: #c9d0e7;
+  font-size: 17px;
+  line-height: 1.7;
+}
+
+
+/* =========================================================
+   MAIN CONTAINER
+========================================================= */
+
+.progress-page .progress-container {
+  position: relative;
+  z-index: 5;
+  width: min(1200px, calc(100% - 40px));
+  margin: -40px auto 0;
+  padding-bottom: 70px;
+}
+
+
+/* =========================================================
+   OVERVIEW
+========================================================= */
+
+.progress-page .progress-overview {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 18px;
+  margin-bottom: 24px;
+}
+
+.progress-page .overview-card {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  min-width: 0;
+  padding: 22px;
+  background: #ffffff;
+  border: 1px solid #e8ebf2;
+  border-radius: 18px;
+  box-shadow: 0 12px 35px rgba(24, 34, 74, 0.07);
+}
+
+.progress-page .overview-icon {
+  width: 48px;
+  height: 48px;
+  min-width: 48px;
+  display: grid;
+  place-items: center;
+  border-radius: 14px;
+  background: #eef1ff;
+  font-size: 23px;
+}
+
+.progress-page .overview-card span {
+  display: block;
+  margin-bottom: 5px;
+  color: #7b8499;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.progress-page .overview-card strong {
+  display: block;
+  color: #172033;
+  font-size: 24px;
+  line-height: 1;
+}
+
+
+/* =========================================================
+   MAIN GRID
+========================================================= */
+
+.progress-page .progress-main-grid {
+  display: grid;
+  grid-template-columns:
+    minmax(0, 1.5fr)
+    minmax(300px, 0.8fr);
+  gap: 22px;
+  margin-bottom: 30px;
+}
+
+
+/* =========================================================
+   PROGRESS CARD
+========================================================= */
+
+.progress-page .progress-card {
+  min-width: 0;
+  background: #ffffff;
+  border: 1px solid #e8ebf2;
+  border-radius: 22px;
+  padding: 28px;
+  box-shadow: 0 12px 35px rgba(24, 34, 74, 0.06);
+}
+
+.progress-page .card-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20px;
+  margin-bottom: 32px;
+}
+
+.progress-page .card-heading span,
+.progress-page .section-heading span,
+.progress-page .personalized-card > span {
+  display: block;
+  color: #5965d8;
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 1px;
+}
+
+.progress-page .card-heading h2 {
+  margin: 6px 0 0;
+  color: #172033;
+  font-size: 24px;
+  line-height: 1.2;
+}
+
+.progress-page .card-heading a {
+  color: #4f46e5;
+  font-size: 13px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+
+/* =========================================================
+   SUBJECT PROGRESS
+   IMPORTANT: SCOPED TO PROGRESS PAGE
+========================================================= */
+
+.progress-page .subject-list {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  gap: 28px;
+}
+
+.progress-page .subject-progress {
+  display: block;
+  position: relative;
+  width: 100%;
+  min-width: 0;
+  min-height: 68px;
+  padding: 0;
+}
+
+
+/* =========================================================
+   SUBJECT TOP ROW
+========================================================= */
+
+.progress-page .subject-top {
+  position: relative;
+  z-index: 3;
+
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  width: 100%;
+  min-height: 44px;
+
+  margin: 0 0 12px;
+  padding: 0;
+
+  gap: 20px;
+}
+
+
+/* =========================================================
+   SUBJECT NAME
+========================================================= */
+
+.progress-page .subject-name {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+
+  min-width: 0;
+  flex: 1;
+}
+
+.progress-page .subject-icon {
+  width: 44px;
+  height: 44px;
+  min-width: 44px;
+
+  display: grid;
+  place-items: center;
+
+  border-radius: 12px;
+  background: #f1f3ff;
+
+  font-size: 21px;
+}
+
+.progress-page .subject-name > div:last-child {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 3px;
+
+  min-width: 0;
+}
+
+.progress-page .subject-name strong {
+  display: block;
+
+  margin: 0;
+  padding: 0;
+
+  color: #172033;
+  font-size: 16px;
+  font-weight: 800;
+  line-height: 1.25;
+}
+
+.progress-page .subject-name small {
+  display: block;
+
+  margin: 0;
+  padding: 0;
+
+  color: #8991a4;
+  font-size: 12px;
+  line-height: 1.25;
+}
+
+
+/* =========================================================
+   PERCENTAGE
+========================================================= */
+
+.progress-page .subject-top > strong {
+  display: block;
+
+  flex: 0 0 auto;
+
+  margin: 0;
+  padding: 0;
+
+  color: #4f46e5;
+  font-size: 15px;
+  font-weight: 800;
+  line-height: 1;
+}
+
+
+/* =========================================================
+   PROGRESS BAR
+========================================================= */
+
+.progress-page .progress-bar {
+  position: relative;
+
+  display: block;
+
+  width: 100%;
+  height: 10px;
+  min-height: 10px;
+
+  margin: 0;
+  padding: 0;
+
+  overflow: hidden;
+
+  border-radius: 999px;
+
+  background: #e9edf5;
+}
+
+
+/* =========================================================
+   PROGRESS FILL
+========================================================= */
+
+.progress-page .progress-fill {
+  position: absolute;
+
+  top: 0;
+  left: 0;
+
+  display: block;
+
+  height: 100%;
+  min-height: 10px;
+
+  margin: 0;
+  padding: 0;
+
+  border-radius: 999px;
+
+  background: linear-gradient(
+    90deg,
+    #4f46e5,
+    #6366f1,
+    #818cf8
+  );
+
+  transition: width 0.4s ease;
+}
+
+
+/* =========================================================
+   PERSONALIZED AI CARD
+========================================================= */
+
+.progress-page .personalized-card {
+  position: relative;
+  overflow: hidden;
+
+  padding: 30px;
+
+  border-radius: 22px;
+
+  background:
+    radial-gradient(
+      circle at 90% 10%,
+      rgba(99, 102, 241, 0.3),
+      transparent 30%
+    ),
+    linear-gradient(
+      145deg,
+      #151b39,
+      #222a59
+    );
+
+  color: white;
+
+  box-shadow: 0 18px 45px rgba(25, 32, 75, 0.18);
+}
+
+.progress-page .personalized-card::after {
+  content: "";
+
+  position: absolute;
+
+  width: 170px;
+  height: 170px;
+
+  right: -80px;
+  bottom: -90px;
+
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 50%;
+}
+
+.progress-page .personalized-icon {
+  width: 52px;
+  height: 52px;
+
+  display: grid;
+  place-items: center;
+
+  margin-bottom: 18px;
+
+  border-radius: 15px;
+
+  background: rgba(255, 255, 255, 0.1);
+
+  font-size: 25px;
+}
+
+.progress-page .personalized-card > span {
+  color: #aeb7ff;
+}
+
+.progress-page .personalized-card h2 {
+  position: relative;
+  z-index: 2;
+
+  margin: 9px 0 12px;
+
+  font-size: 27px;
+  line-height: 1.15;
+}
+
+.progress-page .personalized-card > p {
+  position: relative;
+  z-index: 2;
+
+  margin: 0 0 22px;
+
+  color: #c8cee5;
+
+  font-size: 14px;
+  line-height: 1.7;
+}
+
+.progress-page .ai-recommendation {
+  position: relative;
+  z-index: 2;
+
+  display: flex;
+  align-items: center;
+
+  gap: 12px;
+
+  margin-bottom: 22px;
+  padding: 14px;
+
+  border-radius: 14px;
+
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.progress-page .ai-recommendation > span {
+  font-size: 22px;
+}
+
+.progress-page .ai-recommendation strong {
+  display: block;
+
+  margin: 0 0 3px;
+
+  font-size: 13px;
+}
+
+.progress-page .ai-recommendation small {
+  color: #b8c0db;
+  font-size: 12px;
+}
+
+.progress-page .personalized-button {
+  position: relative;
+  z-index: 2;
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  width: 100%;
+
+  padding: 13px 16px;
+
+  border-radius: 12px;
+
+  background: white;
+  color: #242b57;
+
+  font-size: 13px;
+  font-weight: 800;
+
+  transition: transform 0.2s ease;
+}
+
+.progress-page .personalized-button:hover {
+  transform: translateY(-2px);
+}
+
+
+/* =========================================================
+   RECOMMENDATIONS
+========================================================= */
+
+.progress-page .recommendation-section {
+  margin-bottom: 30px;
+}
+
+.progress-page .section-heading {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+
+  gap: 20px;
+
+  margin-bottom: 18px;
+}
+
+.progress-page .section-heading h2 {
+  margin: 6px 0 0;
+
+  color: #172033;
+
+  font-size: 27px;
+  line-height: 1.2;
+}
+
+.progress-page .section-heading p {
+  margin: 0;
+
+  color: #7d8699;
+
+  font-size: 13px;
+}
+
+.progress-page .recommendation-grid {
+  display: grid;
+
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+
+  gap: 18px;
+}
+
+.progress-page .recommendation-card {
+  min-width: 0;
+
+  padding: 24px;
+
+  background: white;
+
+  border: 1px solid #e8ebf2;
+  border-radius: 18px;
+
+  box-shadow: 0 10px 30px rgba(24, 34, 74, 0.05);
+
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.progress-page .recommendation-card:hover {
+  transform: translateY(-4px);
+
+  box-shadow:
+    0 16px 35px rgba(24, 34, 74, 0.09);
+}
+
+.progress-page .recommendation-icon {
+  width: 48px;
+  height: 48px;
+
+  display: grid;
+  place-items: center;
+
+  margin-bottom: 17px;
+
+  border-radius: 14px;
+
+  background: #f1f3ff;
+
+  font-size: 23px;
+}
+
+.progress-page .recommendation-card h3 {
+  margin: 0 0 8px;
+
+  font-size: 17px;
+}
+
+.progress-page .recommendation-card p {
+  min-height: 44px;
+
+  margin: 0 0 18px;
+
+  color: #7d8699;
+
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.progress-page .recommendation-card a {
+  color: #4f46e5;
+
+  font-size: 13px;
+  font-weight: 800;
+}
+
+
+/* =========================================================
+   STREAK BANNER
+========================================================= */
+
+.progress-page .streak-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  gap: 25px;
+
+  padding: 25px 28px;
+
+  border-radius: 20px;
+
+  background:
+    linear-gradient(
+      135deg,
+      #fff8e8,
+      #fffdf6
+    );
+
+  border: 1px solid #f2e6c8;
+}
+
+.progress-page .streak-left {
+  display: flex;
+  align-items: center;
+
+  gap: 17px;
+
+  min-width: 0;
+}
+
+.progress-page .streak-fire {
+  width: 58px;
+  height: 58px;
+  min-width: 58px;
+
+  display: grid;
+  place-items: center;
+
+  border-radius: 16px;
+
+  background: #fff0cf;
+
+  font-size: 28px;
+}
+
+.progress-page .streak-left span {
+  color: #b57a18;
+
+  font-size: 10px;
+  font-weight: 900;
+
+  letter-spacing: 1px;
+}
+
+.progress-page .streak-left h2 {
+  margin: 5px 0;
+
+  color: #3c3424;
+
+  font-size: 20px;
+}
+
+.progress-page .streak-left p {
+  margin: 0;
+
+  color: #857a67;
+
+  font-size: 13px;
+}
+
+.progress-page .streak-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  padding: 13px 18px;
+
+  border-radius: 12px;
+
+  background: #172033;
+  color: white;
+
+  font-size: 13px;
+  font-weight: 800;
+
+  white-space: nowrap;
+
+  transition: transform 0.2s ease;
+}
+
+.progress-page .streak-button:hover {
+  transform: translateY(-2px);
+}
+
+
+/* =========================================================
+   TABLET
+========================================================= */
+
+@media (max-width: 1024px) {
+
+  .progress-page .progress-hero {
+    padding: 65px 24px 80px;
+  }
+
+  .progress-page .progress-overview {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .progress-page .progress-main-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .progress-page .recommendation-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+
+/* =========================================================
+   MOBILE
+========================================================= */
+
+@media (max-width: 700px) {
+
+  .progress-page .progress-hero {
+    padding: 50px 20px 70px;
+  }
+
+  .progress-page .progress-hero h1 {
+    font-size: 39px;
+    letter-spacing: -1.3px;
+  }
+
+  .progress-page .progress-hero p {
+    font-size: 15px;
+  }
+
+  .progress-page .progress-container {
+    width: calc(100% - 24px);
+    margin-top: -30px;
+  }
+
+  .progress-page .progress-overview {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+  }
+
+  .progress-page .overview-card {
+    padding: 16px;
+    gap: 10px;
+
+    border-radius: 15px;
+  }
+
+  .progress-page .overview-icon {
+    width: 40px;
+    height: 40px;
+    min-width: 40px;
+
+    border-radius: 11px;
+
+    font-size: 18px;
+  }
+
+  .progress-page .overview-card span {
+    font-size: 10px;
+  }
+
+  .progress-page .overview-card strong {
+    font-size: 19px;
+  }
+
+  .progress-page .progress-card,
+  .progress-page .personalized-card {
+    padding: 21px;
+
+    border-radius: 18px;
+  }
+
+  .progress-page .card-heading {
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .progress-page .card-heading h2 {
+    font-size: 21px;
+  }
+
+
+  /* ================= SUBJECT MOBILE ================= */
+
+  .progress-page .subject-list {
+    gap: 25px;
+  }
+
+  .progress-page .subject-progress {
+    min-height: 64px;
+  }
+
+  .progress-page .subject-top {
+    min-height: 40px;
+
+    gap: 12px;
+
+    margin-bottom: 10px;
+  }
+
+  .progress-page .subject-name {
+    gap: 9px;
+  }
+
+  .progress-page .subject-icon {
+    width: 40px;
+    height: 40px;
+    min-width: 40px;
+
+    font-size: 19px;
+  }
+
+  .progress-page .subject-name strong {
+    font-size: 14px;
+  }
+
+  .progress-page .subject-name small {
+    font-size: 11px;
+  }
+
+  .progress-page .subject-top > strong {
+    font-size: 14px;
+  }
+
+  .progress-page .progress-bar {
+    height: 9px;
+    min-height: 9px;
+  }
+
+  .progress-page .progress-fill {
+    min-height: 9px;
+  }
+
+
+  /* ================= RECOMMENDATIONS ================= */
+
+  .progress-page .recommendation-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .progress-page .section-heading {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 7px;
+  }
+
+  .progress-page .section-heading h2 {
+    font-size: 23px;
+  }
+
+
+  /* ================= STREAK ================= */
+
+  .progress-page .streak-banner {
+    align-items: flex-start;
+    flex-direction: column;
+
+    padding: 21px;
+  }
+
+  .progress-page .streak-left {
+    align-items: flex-start;
+  }
+
+  .progress-page .streak-left h2 {
+    font-size: 17px;
+  }
+
+  .progress-page .streak-button {
+    width: 100%;
+  }
+}
+
+
+/* =========================================================
+   SMALL MOBILE
+========================================================= */
+
+@media (max-width: 420px) {
+
+  .progress-page .progress-hero {
+    padding: 42px 16px 60px;
+  }
+
+  .progress-page .progress-hero h1 {
+    font-size: 34px;
+  }
+
+  .progress-page .progress-container {
+    width: calc(100% - 18px);
+  }
+
+  .progress-page .progress-overview {
+    gap: 8px;
+  }
+
+  .progress-page .overview-card {
+    padding: 13px 10px;
+  }
+
+  .progress-page .overview-icon {
+    width: 35px;
+    height: 35px;
+    min-width: 35px;
+
+    font-size: 16px;
+  }
+
+  .progress-page .overview-card span {
+    font-size: 9px;
+  }
+
+  .progress-page .overview-card strong {
+    font-size: 17px;
+  }
+
+
+  /* ================= SMALL SUBJECT ================= */
+
+  .progress-page .subject-list {
+    gap: 23px;
+  }
+
+  .progress-page .subject-top {
+    gap: 8px;
+  }
+
+  .progress-page .subject-name {
+    gap: 8px;
+  }
+
+  .progress-page .subject-icon {
+    width: 37px;
+    height: 37px;
+    min-width: 37px;
+
+    font-size: 17px;
+  }
+
+  .progress-page .subject-name strong {
+    font-size: 13px;
+  }
+
+  .progress-page .subject-name small {
+    font-size: 10px;
+  }
+
+  .progress-page .subject-top > strong {
+    font-size: 13px;
+  }
+
+  .progress-page .progress-bar {
+    height: 8px;
+    min-height: 8px;
+  }
+
+  .progress-page .progress-fill {
+    min-height: 8px;
+  }
+}

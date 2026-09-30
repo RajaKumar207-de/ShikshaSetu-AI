@@ -1,0 +1,35 @@
+/* =========================================================
+   SHIKSHASETU AI
+   APP CSS
+========================================================= */
+
+/* Root container */
+
+#root {
+  width: 100%;
+  min-height: 100vh;
+}
+
+/* Main app wrapper */
+
+.app {
+  width: 100%;
+  min-height: 100vh;
+}
+
+/* Prevent unwanted horizontal scrolling */
+
+html,
+body {
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
+/* Smooth page transitions */
+
+* {
+  transition:
+    background-color 0.2s ease,
+    border-color 0.2s ease,
+    color 0.2s ease;
+}
